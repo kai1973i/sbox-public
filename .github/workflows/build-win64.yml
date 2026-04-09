@@ -1,0 +1,49 @@
+name: Build Windows x64
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+  workflow_dispatch:  # Ermöglicht manuelles Auslösen
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Restore Dependencies
+      run: dotnet restore engine/Sandbox-Engine.slnx --runtime win-x64
+
+    - name: Build Solution
+      run: dotnet build engine/Sandbox-Engine.slnx --configuration ${{ matrix.configuration }} --runtime win-x64 --no-restore
+
+    - name: Run Unit Tests
+      run: dotnet test engine/Sandbox-Engine.slnx --configuration ${{ matrix.configuration }} --runtime win-x64 --no-build --verbosity normal
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: sbox-win64-${{ matrix.configuration }}
+        path: |
+          engine/**/bin/${{ matrix.configuration }}/net*/**
+        retention-days: 30
