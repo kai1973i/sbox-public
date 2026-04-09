@@ -5,13 +5,11 @@ on:
     branches: [ "master", "main" ]
   pull_request:
     branches: [ "master", "main" ]
-  workflow_dispatch:  # Ermöglicht manuelles Auslösen
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
-    permissions:
-      contents: read
     
     strategy:
       matrix:
@@ -32,13 +30,16 @@ jobs:
       uses: microsoft/setup-msbuild@v2
 
     - name: Restore Dependencies
-      run: dotnet restore engine/Sandbox-Engine.slnx --runtime win-x64
+      working-directory: engine
+      run: dotnet restore Sandbox-Engine.slnx
 
     - name: Build Solution
-      run: dotnet build engine/Sandbox-Engine.slnx --configuration ${{ matrix.configuration }} --runtime win-x64 --no-restore
+      working-directory: engine
+      run: dotnet build Sandbox-Engine.slnx --configuration ${{ matrix.configuration }} --no-restore -p:Platform="x64"
 
     - name: Run Unit Tests
-      run: dotnet test engine/Sandbox-Engine.slnx --configuration ${{ matrix.configuration }} --runtime win-x64 --no-build --verbosity normal
+      working-directory: engine
+      run: dotnet test Sandbox-Engine.slnx --configuration ${{ matrix.configuration }} --no-build --verbosity normal
 
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
